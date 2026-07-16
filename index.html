@@ -340,6 +340,14 @@
       <button id="syncSaveBtn">Save</button>
     </div>
     <div class="sync-status" id="syncStatus">Not connected — entries save on this device only</div>
+    
+    <!-- New Template Helper (Only shows when not connected) -->
+    <div id="templateHelper" style="margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border-color); text-align: center; font-size: 12px;">
+      <span style="color: var(--text-muted);">Want to back up to the cloud?</span><br>
+      <a href="YOUR_GOOGLE_SHEET_COPY_LINK_HERE" target="_blank" style="color: var(--brand-primary); font-weight: 700; text-decoration: none; display: inline-block; margin-top: 4px;">
+        📊 Click here to copy the Google Sheet Template
+      </a>
+    </div>
   </div>
 
   <div class="total-card">
@@ -395,8 +403,15 @@ function todayStr(){
 
 function setSyncStatus(msg, connected){
   const el = document.getElementById('syncStatus');
+  const helperEl = document.getElementById('templateHelper');
+  
   el.textContent = msg;
   el.classList.toggle('connected', !!connected);
+  
+  // Hide the template helper if they are successfully connected
+  if(helperEl) {
+    helperEl.style.display = connected ? 'none' : 'block';
+  }
 }
 
 function loadLocal(){
