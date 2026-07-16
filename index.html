@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Ledger</title>
+
+<!-- PWA manifest (Android + modern browsers) -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1B4332">
+
+<!-- iOS home screen behavior -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ledger">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+
+<!-- Icons -->
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+
+<style>
+  :root{
+    --paper: #FBF7F0;
+    --ink: #2B2B2B;
+    --ledger-green: #1B4332;
+    --ledger-green-dark: #10281E;
+    --gold: #C9A227;
+    --line: #DDD4C0;
+    --muted: #8A8272;
+    --danger: #A63D2F;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family: 'Georgia', 'Times New Roman', serif;
+    min-height:100vh;
+    padding-bottom:40px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .app{max-width:480px; margin:0 auto; padding:0 16px;}
+
+  header{
+    padding:28px 4px 18px;
+    text-align:center;
+  }
+  header .eyebrow{
+    font-family: 'Courier New', monospace;
+    font-size:11px;
+    letter-spacing:3px;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin-bottom:6px;
+  }
+  header h1{
+    font-size:20px;
+    font-weight:400;
+    letter-spacing:1px;
+    color:var(--ledger-green-dark);
+  }
+
+  .sync-panel{
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:10px 12px;
+    margin-bottom:14px;
+  }
+  .sync-row{display:flex; gap:6px;}
+  .sync-row input{
+    flex:1;
+    font-family:'Courier New', monospace;
+    font-size:11px;
+    padding:7px 8px;
+  }
+  .sync-row button{
+    background:var(--ledger-green);
+    color:#fff;
+    border:none;
+    border-radius:4px;
+    padding:0 12px;
+    font-family:'Courier New', monospace;
+    font-size:11px;
+    cursor:pointer;
+  }
+  .sync-status{
+    font-family:'Courier New', monospace;
+    font-size:10.5px;
+    color:var(--muted);
+    margin-top:6px;
+  }
+  .sync-status.connected{color:var(--ledger-green-dark);}
+
+  .total-card{
+    background:var(--ledger-green);
+    color:var(--paper);
+    border-radius:6px;
+    padding:22px 20px;
+    margin-bottom:18px;
+    position:relative;
+    overflow:hidden;
+  }
+  .total-card::before{
+    content:"";
+    position:absolute;
+    top:0; left:0; right:0; height:4px;
+    background:repeating-linear-gradient(90deg, var(--gold) 0 10px, transparent 10px 20px);
+    opacity:0.6;
+  }
+  .total-label{
+    font-family:'Courier New', monospace;
+    font-size:11px;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    opacity:0.75;
+    margin-bottom:4px;
+  }
+  .total-amount{
+    font-family:'Courier New', monospace;
+    font-size:36px;
+    font-variant-numeric: tabular-nums;
+    letter-spacing:0.5px;
+  }
+  .total-sub{
+    font-family:'Courier New', monospace;
+    font-size:12px;
+    opacity:0.7;
+    margin-top:6px;
+  }
+
+  .entry-form{
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:16px;
+    margin-bottom:22px;
+  }
+  .row{display:flex; gap:10px; margin-bottom:10px;}
+  .field{flex:1; display:flex; flex-direction:column;}
+  .field label{
+    font-family:'Courier New', monospace;
+    font-size:10px;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin-bottom:4px;
+  }
+  input{
+    font-family:'Courier New', monospace;
+    font-size:15px;
+    padding:9px 10px;
+    border:1px solid var(--line);
+    border-radius:4px;
+    background:var(--paper);
+    color:var(--ink);
+    width:100%;
+  }
+  input:focus{outline:2px solid var(--ledger-green); outline-offset:1px;}
+  input[type="text"]{font-family:'Georgia', serif; font-size:15px;}
+  input[type="date"]{
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    -webkit-appearance: none;
+    appearance: none;
+    min-width: 0;
+  }
+  .field{ min-width: 0; }
+
+  .add-btn{
+    width:100%;
+    background:var(--ledger-green);
+    color:var(--paper);
+    border:none;
+    border-radius:4px;
+    padding:12px;
+    font-family:'Courier New', monospace;
+    font-size:13px;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    cursor:pointer;
+    transition:background 0.15s ease;
+  }
+  .add-btn:active{background:var(--ledger-green-dark);}
+
+  .section-label{
+    font-family:'Courier New', monospace;
+    font-size:11px;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin:0 4px 8px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .section-label button{
+    background:none; border:none; color:var(--danger);
+    font-family:'Courier New', monospace; font-size:10px;
+    letter-spacing:1px; cursor:pointer; text-decoration:underline;
+    padding:0;
+  }
+
+  .entry{
+    background:#fff;
+    border:1px solid var(--line);
+    border-left:3px solid var(--gold);
+    border-radius:4px;
+    padding:12px 14px;
+    margin-bottom:8px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+  }
+  .entry-main{flex:1; min-width:0;}
+  .entry-desc{
+    font-size:15px;
+    color:var(--ink);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .entry-date{
+    font-family:'Courier New', monospace;
+    font-size:11px;
+    color:var(--muted);
+    margin-top:2px;
+  }
+  .entry-amount{
+    font-family:'Courier New', monospace;
+    font-size:16px;
+    font-variant-numeric: tabular-nums;
+    color:var(--danger);
+    white-space:nowrap;
+  }
+  .entry-del{
+    background:none; border:none; color:var(--muted);
+    font-size:16px; cursor:pointer; padding:2px 4px;
+    line-height:1;
+  }
+  .entry-del:hover{color:var(--danger);}
+
+  .empty{
+    text-align:center;
+    color:var(--muted);
+    font-family:'Courier New', monospace;
+    font-size:13px;
+    padding:30px 10px;
+  }
+
+  .export-row{
+    display:flex;
+    gap:8px;
+    margin-bottom:10px;
+  }
+  .export-btn{
+    flex:1;
+    background:#fff;
+    border:1px solid var(--ledger-green);
+    color:var(--ledger-green-dark);
+    border-radius:4px;
+    padding:9px 6px;
+    font-family:'Courier New', monospace;
+    font-size:11.5px;
+    letter-spacing:0.5px;
+    cursor:pointer;
+    text-align:center;
+  }
+  .export-btn:active{background:var(--ledger-green); color:#fff;}
+  .copy-toast{
+    text-align:center;
+    font-family:'Courier New', monospace;
+    font-size:11px;
+    color:var(--ledger-green-dark);
+    height:16px;
+    margin-bottom:6px;
+    opacity:0;
+    transition:opacity 0.2s ease;
+  }
+  .copy-toast.show{opacity:1;}
+
+  .install-hint{
+    font-family:'Courier New', monospace;
+    font-size:11px;
+    color:var(--muted);
+    text-align:center;
+    margin-top:26px;
+    padding:0 12px;
+    line-height:1.6;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="eyebrow">Personal Ledger</div>
+    <h1>Expense Tracker</h1>
+  </header>
+
+  <div class="sync-panel" id="syncPanel">
+    <div class="sync-row">
+      <input type="text" id="syncUrl" placeholder="Paste Google Apps Script URL here">
+      <button id="syncSaveBtn">Save</button>
+    </div>
+    <div class="sync-status" id="syncStatus">Not connected — entries save on this device only</div>
+  </div>
+
+  <div class="total-card">
+    <div class="total-label">This Month</div>
+    <div class="total-amount" id="totalAmount">MVR 0.00</div>
+    <div class="total-sub" id="entryCount">0 entries</div>
+  </div>
+
+  <div class="entry-form">
+    <div class="field" style="margin-bottom:10px;">
+      <label>Amount (MVR)</label>
+      <input type="number" id="amount" inputmode="decimal" step="0.01" placeholder="0.00">
+    </div>
+    <div class="field" style="margin-bottom:10px;">
+      <label>Date</label>
+      <input type="date" id="date">
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>Description</label>
+        <input type="text" id="description" placeholder="e.g. lunch, ferry ticket">
+      </div>
+    </div>
+    <button class="add-btn" id="addBtn">+ Add Entry</button>
+  </div>
+
+  <div class="section-label">
+    <span>Entries</span>
+    <button id="clearAll">clear all</button>
+  </div>
+
+  <div class="export-row">
+    <button class="export-btn" id="copyExcelBtn">📋 Copy for Excel</button>
+    <button class="export-btn" id="downloadExcelBtn">⬇ Download .xlsx</button>
+  </div>
+  <div id="copyToast" class="copy-toast"></div>
+
+  <div id="entryList"></div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+const STORAGE_KEY = 'expenses_list';
+const SYNC_URL_KEY = 'expenses_sync_url';
+let entries = [];
+let syncUrl = localStorage.getItem(SYNC_URL_KEY) || '';
+
+function todayStr(){
+  const d = new Date();
+  return d.toISOString().slice(0,10);
+}
+
+function setSyncStatus(msg, connected){
+  const el = document.getElementById('syncStatus');
+  el.textContent = msg;
+  el.classList.toggle('connected', !!connected);
+}
+
+function loadLocal(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  }catch(e){
+    return [];
+  }
+}
+
+function saveLocal(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  }catch(e){
+    console.error('Local save failed', e);
+  }
+}
+
+async function loadEntries(){
+  entries = loadLocal();
+  render();
+
+  if(!syncUrl){
+    setSyncStatus('Not connected — entries save on this device only', false);
+    return;
+  }
+
+  setSyncStatus('Syncing…', false);
+  try{
+    const res = await fetch(syncUrl);
+    const remote = await res.json();
+    entries = remote.map(r => ({
+      id: Number(r.id),
+      date: r.date,
+      description: r.description,
+      amount: Number(r.amount)
+    }));
+    saveLocal();
+    render();
+    setSyncStatus('Connected — synced with Google Sheet', true);
+  }catch(e){
+    setSyncStatus('Sync failed — showing entries saved on this device', false);
+  }
+}
+
+async function pushAdd(entry){
+  if(!syncUrl) return;
+  try{
+    await fetch(syncUrl, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: {'Content-Type': 'text/plain'},
+      body: JSON.stringify({ action: 'add', ...entry })
+    });
+    setSyncStatus('Connected — synced with Google Sheet', true);
+  }catch(e){
+    setSyncStatus('Saved locally — will not sync until back online', false);
+  }
+}
+
+async function pushDelete(id){
+  if(!syncUrl) return;
+  try{
+    await fetch(syncUrl, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: {'Content-Type': 'text/plain'},
+      body: JSON.stringify({ action: 'delete', id })
+    });
+  }catch(e){}
+}
+
+async function pushClear(){
+  if(!syncUrl) return;
+  try{
+    await fetch(syncUrl, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: {'Content-Type': 'text/plain'},
+      body: JSON.stringify({ action: 'clear' })
+    });
+  }catch(e){}
+}
+
+function formatAmount(n){
+  return 'MVR ' + n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+function formatDate(dstr){
+  const d = new Date(dstr + 'T00:00:00');
+  return d.toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'});
+}
+
+function render(){
+  const sorted = [...entries].sort((a,b) => b.date.localeCompare(a.date) || b.id - a.id);
+  const total = entries.reduce((sum, e) => sum + e.amount, 0);
+
+  document.getElementById('totalAmount').textContent = formatAmount(total);
+  document.getElementById('entryCount').textContent = entries.length + (entries.length === 1 ? ' entry' : ' entries');
+
+  const list = document.getElementById('entryList');
+  if(sorted.length === 0){
+    list.innerHTML = '<div class="empty">No entries yet. Add your first expense above.</div>';
+    return;
+  }
+
+  list.innerHTML = sorted.map(e => `
+    <div class="entry" data-id="${e.id}">
+      <div class="entry-main">
+        <div class="entry-desc">${escapeHtml(e.description)}</div>
+        <div class="entry-date">${formatDate(e.date)}</div>
+      </div>
+      <div class="entry-amount">${formatAmount(e.amount)}</div>
+      <button class="entry-del" data-id="${e.id}">✕</button>
+    </div>
+  `).join('');
+
+  list.querySelectorAll('.entry-del').forEach(btn => {
+    btn.addEventListener('click', (ev) => {
+      const id = Number(ev.currentTarget.dataset.id);
+      entries = entries.filter(e => e.id !== id);
+      saveLocal();
+      render();
+      pushDelete(id);
+    });
+  });
+}
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+document.getElementById('date').value = todayStr();
+
+document.getElementById('addBtn').addEventListener('click', () => {
+  const amountEl = document.getElementById('amount');
+  const dateEl = document.getElementById('date');
+  const descEl = document.getElementById('description');
+
+  const amount = parseFloat(amountEl.value);
+  const date = dateEl.value || todayStr();
+  const description = descEl.value.trim();
+
+  if(!amount || amount <= 0){
+    amountEl.focus();
+    return;
+  }
+  if(!description){
+    descEl.focus();
+    return;
+  }
+
+  const newEntry = {
+    id: Date.now(),
+    amount: amount,
+    date: date,
+    description: description
+  };
+  entries.push(newEntry);
+
+  saveLocal();
+  render();
+  pushAdd(newEntry);
+
+  amountEl.value = '';
+  descEl.value = '';
+  dateEl.value = todayStr();
+  amountEl.focus();
+});
+
+document.getElementById('clearAll').addEventListener('click', () => {
+  if(entries.length === 0) return;
+  if(confirm('Delete all entries? This cannot be undone.')){
+    entries = [];
+    saveLocal();
+    render();
+    pushClear();
+  }
+});
+
+document.getElementById('syncSaveBtn').addEventListener('click', () => {
+  const url = document.getElementById('syncUrl').value.trim();
+  if(!url){
+    setSyncStatus('Not connected — entries save on this device only', false);
+    return;
+  }
+  syncUrl = url;
+  localStorage.setItem(SYNC_URL_KEY, url);
+  loadEntries();
+});
+
+document.getElementById('syncUrl').value = syncUrl;
+
+// allow Enter key in amount/description to submit
+['amount','description'].forEach(id => {
+  document.getElementById(id).addEventListener('keydown', (ev) => {
+    if(ev.key === 'Enter'){
+      document.getElementById('addBtn').click();
+    }
+  });
+});
+
+function getSortedEntries(){
+  return [...entries].sort((a,b) => a.date.localeCompare(b.date) || a.id - b.id);
+}
+
+function showToast(msg){
+  const toast = document.getElementById('copyToast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2200);
+}
+
+// Copy tab-separated rows to clipboard — pastes directly into Excel cells
+document.getElementById('copyExcelBtn').addEventListener('click', async () => {
+  const sorted = getSortedEntries();
+  if(sorted.length === 0){
+    showToast('No entries to copy');
+    return;
+  }
+  const rows = [['Date','Description','Amount (MVR)']];
+  sorted.forEach(e => rows.push([formatDateISO(e.date), e.description, e.amount.toFixed(2)]));
+  const tsv = rows.map(r => r.join('\t')).join('\n');
+
+  try{
+    await navigator.clipboard.writeText(tsv);
+    showToast('Copied — paste directly into Excel');
+  }catch(e){
+    // fallback for older browsers / permissions issues
+    const textarea = document.createElement('textarea');
+    textarea.value = tsv;
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+    showToast('Copied — paste directly into Excel');
+  }
+});
+
+function formatDateISO(dstr){
+  return dstr; // already YYYY-MM-DD, Excel reads this natively
+}
+
+// Download an actual .xlsx file
+document.getElementById('downloadExcelBtn').addEventListener('click', () => {
+  const sorted = getSortedEntries();
+  if(sorted.length === 0){
+    showToast('No entries to export');
+    return;
+  }
+  const rows = [['Date','Description','Amount (MVR)']];
+  sorted.forEach(e => rows.push([e.date, e.description, e.amount]));
+  const total = entries.reduce((sum, e) => sum + e.amount, 0);
+  rows.push([]);
+  rows.push(['', 'Total', total]);
+
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{wch:12}, {wch:32}, {wch:14}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Expenses');
+
+  const filename = 'expenses_' + todayStr() + '.xlsx';
+  XLSX.writeFile(wb, filename);
+});
+
+loadEntries();
+</script>
+</body>
+</html>
