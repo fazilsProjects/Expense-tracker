@@ -329,8 +329,31 @@
   </header>
 
   <div class="sync-panel" id="syncPanel">
+    <!-- Template Onboarding Button -->
+    <div style="margin-bottom: 14px; text-align: center;">
+      <a href="https://docs.google.com/spreadsheets/d/1-hOysCedkL-wFykvOyJMQUVUUuyPRUce131bxWmFW_A/template/preview" 
+         target="_blank" 
+         style="display: block; background: #10b981; color: white; text-decoration: none; padding: 12px; border-radius: 12px; font-size: 14px; font-weight: 700; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.15); transition: background 0.2s;">
+         🟢 Step 1: Create Your Linked Google Sheet
+      </a>
+      <span style="display: inline-block; margin-top: 6px; font-size: 11px; color: var(--text-muted);">
+        Click above, click "Use Template", then inside your new sheet go to <b>Deploy &rarr; New Deployment &rarr; Web App (Anyone)</b>.
+      </span>
+    </div>
+
+    <div style="border-top: 1px dashed var(--border-color); margin: 12px 0; padding-top: 12px;">
+      <span style="display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px;">
+        Step 2: Connect via API Link
+      </span>
+      <div class="sync-row">
+        <input type="text" id="syncUrl" placeholder="Paste Cell A1 URL link here">
+        <button id="syncSaveBtn">Connect</button>
+      </div>
+      <div class="sync-status" id="syncStatus">Not connected — entries save on this device only</div>
+    </div>
+  </div>
     <div class="sync-row">
-      <input type="text" id="syncUrl" placeholder="Paste A1 Google Script URL here">
+      <input type="text" id="syncUrl" placeholder="Paste Cell A1 URL here">
       <button id="syncSaveBtn">Connect</button>
     </div>
     <div class="sync-status" id="syncStatus">Not connected — entries save on this device only</div>
@@ -354,7 +377,7 @@
     <div class="row">
       <div class="field">
         <label>Description</label>
-        <input type="text" id="description" placeholder="e.g. lunch, office transport">
+        <input type="text" id="description" placeholder="e.g. lunch, office items">
       </div>
     </div>
     <button class="add-btn" id="addBtn">Add Entry</button>
@@ -406,7 +429,7 @@ function saveLocal(){
   try{
     localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
   }catch(e){
-    console.error('Local save failed', e);
+    console.error('Local storage update halted', e);
   }
 }
 
@@ -419,7 +442,7 @@ async function loadEntries(){
     return;
   }
 
-  setSyncStatus('Syncing with Google Sheet...', false);
+  setSyncStatus('Connecting to Google Sheet API...', false);
   try{
     const res = await fetch(syncUrl);
     const remote = await res.json();
@@ -433,7 +456,7 @@ async function loadEntries(){
     render();
     setSyncStatus('Connected — synced with Google Sheet', true);
   }catch(e){
-    setSyncStatus('Offline — showing locally saved items', false);
+    setSyncStatus('Offline Mode — showing local history elements', false);
   }
 }
 
@@ -448,7 +471,7 @@ async function pushAdd(entry){
     });
     setSyncStatus('Connected — synced with Google Sheet', true);
   }catch(e){
-    setSyncStatus('Saved locally — will sync when online', false);
+    setSyncStatus('Saved locally — will auto sync when online', false);
   }
 }
 
@@ -494,7 +517,7 @@ function render(){
 
   const list = document.getElementById('entryList');
   if(sorted.length === 0){
-    list.innerHTML = '<div class="empty">No entries yet. Add your first expense above.</div>';
+    list.innerHTML = '<div class="empty">No entries logged. Use the form above to add an expense.</div>';
     return;
   }
 
@@ -572,7 +595,7 @@ document.getElementById('addBtn').addEventListener('click', () => {
 
 document.getElementById('clearAll').addEventListener('click', () => {
   if(entries.length === 0) return;
-  if(confirm('Delete all entries from your device and sheet?')){
+  if(confirm('Wipe out all database entries completely? This action cannot be reversed.')){
     entries = [];
     saveLocal();
     render();
@@ -583,7 +606,7 @@ document.getElementById('clearAll').addEventListener('click', () => {
 document.getElementById('syncSaveBtn').addEventListener('click', () => {
   const url = document.getElementById('syncUrl').value.trim();
   if(!url){
-    setSyncStatus('Not connected — items remain on this device only', false);
+    setSyncStatus('Not connected — entries save on this device only', false);
     return;
   }
   syncUrl = url;
