@@ -5,17 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Ledger</title>
 
-<!-- PWA manifest (Android + modern browsers) -->
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0f172a">
 
-<!-- iOS home screen behavior -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Ledger">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
 
-<!-- Icons -->
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=2">
 <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png?v=2">
 
@@ -83,6 +80,8 @@
     flex: 1;
     font-size: 13px;
     padding: 10px 14px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
   }
   .sync-row button {
     background: var(--text-primary);
@@ -178,10 +177,6 @@
     border-color: var(--brand-primary);
     box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.12);
   }
-  input[type="date"] {
-    appearance: none;
-    -webkit-appearance: none;
-  }
 
   .add-btn {
     width: 100%;
@@ -220,7 +215,6 @@
   }
   .section-label button:hover { background: rgba(239, 68, 68, 0.08); }
 
-  /* Dynamic Item Animations */
   .entry {
     background: var(--card-bg);
     border: 1px solid var(--border-color);
@@ -336,18 +330,10 @@
 
   <div class="sync-panel" id="syncPanel">
     <div class="sync-row">
-      <input type="text" id="syncUrl" placeholder="Paste Google Apps Script URL here">
-      <button id="syncSaveBtn">Save</button>
+      <input type="text" id="syncUrl" placeholder="Paste A1 Google Script URL here">
+      <button id="syncSaveBtn">Connect</button>
     </div>
     <div class="sync-status" id="syncStatus">Not connected — entries save on this device only</div>
-    
-    <!-- New Template Helper (Only shows when not connected) -->
-    <div id="templateHelper" style="margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border-color); text-align: center; font-size: 12px;">
-      <span style="color: var(--text-muted);">Want to back up to the cloud?</span><br>
-      <a href="YOUR_GOOGLE_SHEET_COPY_LINK_HERE" target="_blank" style="color: var(--brand-primary); font-weight: 700; text-decoration: none; display: inline-block; margin-top: 4px;">
-        📊 Click here to copy the Google Sheet Template
-      </a>
-    </div>
   </div>
 
   <div class="total-card">
@@ -368,7 +354,7 @@
     <div class="row">
       <div class="field">
         <label>Description</label>
-        <input type="text" id="description" placeholder="e.g. lunch, ferry ticket">
+        <input type="text" id="description" placeholder="e.g. lunch, office transport">
       </div>
     </div>
     <button class="add-btn" id="addBtn">Add Entry</button>
@@ -403,15 +389,8 @@ function todayStr(){
 
 function setSyncStatus(msg, connected){
   const el = document.getElementById('syncStatus');
-  const helperEl = document.getElementById('templateHelper');
-  
   el.textContent = msg;
   el.classList.toggle('connected', !!connected);
-  
-  // Hide the template helper if they are successfully connected
-  if(helperEl) {
-    helperEl.style.display = connected ? 'none' : 'block';
-  }
 }
 
 function loadLocal(){
@@ -440,7 +419,7 @@ async function loadEntries(){
     return;
   }
 
-  setSyncStatus('Syncing…', false);
+  setSyncStatus('Syncing with Google Sheet...', false);
   try{
     const res = await fetch(syncUrl);
     const remote = await res.json();
@@ -454,7 +433,7 @@ async function loadEntries(){
     render();
     setSyncStatus('Connected — synced with Google Sheet', true);
   }catch(e){
-    setSyncStatus('Sync failed — showing entries saved on this device', false);
+    setSyncStatus('Offline — showing locally saved items', false);
   }
 }
 
@@ -469,7 +448,7 @@ async function pushAdd(entry){
     });
     setSyncStatus('Connected — synced with Google Sheet', true);
   }catch(e){
-    setSyncStatus('Saved locally — will not sync until back online', false);
+    setSyncStatus('Saved locally — will sync when online', false);
   }
 }
 
@@ -535,7 +514,6 @@ function render(){
       const id = Number(ev.currentTarget.dataset.id);
       const targetCard = ev.currentTarget.closest('.entry');
       
-      // Trigger animation sequence before state changes
       targetCard.classList.add('removing');
       
       setTimeout(() => {
@@ -543,7 +521,7 @@ function render(){
         saveLocal();
         render();
         pushDelete(id);
-      }, 250); // Matches CSS slideOut duration
+      }, 250);
     });
   });
 }
@@ -594,7 +572,7 @@ document.getElementById('addBtn').addEventListener('click', () => {
 
 document.getElementById('clearAll').addEventListener('click', () => {
   if(entries.length === 0) return;
-  if(confirm('Delete all entries? This cannot be undone.')){
+  if(confirm('Delete all entries from your device and sheet?')){
     entries = [];
     saveLocal();
     render();
@@ -605,7 +583,7 @@ document.getElementById('clearAll').addEventListener('click', () => {
 document.getElementById('syncSaveBtn').addEventListener('click', () => {
   const url = document.getElementById('syncUrl').value.trim();
   if(!url){
-    setSyncStatus('Not connected — entries save on this device only', false);
+    setSyncStatus('Not connected — items remain on this device only', false);
     return;
   }
   syncUrl = url;
@@ -615,7 +593,6 @@ document.getElementById('syncSaveBtn').addEventListener('click', () => {
 
 document.getElementById('syncUrl').value = syncUrl;
 
-// allow Enter key in amount/description to submit
 ['amount','description'].forEach(id => {
   document.getElementById(id).addEventListener('keydown', (ev) => {
     if(ev.key === 'Enter'){
@@ -635,7 +612,6 @@ function showToast(msg){
   setTimeout(() => toast.classList.remove('show'), 2200);
 }
 
-// Copy tab-separated rows to clipboard — pastes directly into Excel cells
 document.getElementById('copyExcelBtn').addEventListener('click', async () => {
   const sorted = getSortedEntries();
   if(sorted.length === 0){
@@ -643,14 +619,13 @@ document.getElementById('copyExcelBtn').addEventListener('click', async () => {
     return;
   }
   const rows = [['Date','Description','Amount (MVR)']];
-  sorted.forEach(e => rows.push([formatDateISO(e.date), e.description, e.amount.toFixed(2)]));
+  sorted.forEach(e => rows.push([e.date, e.description, e.amount.toFixed(2)]));
   const tsv = rows.map(r => r.join('\t')).join('\n');
 
   try{
     await navigator.clipboard.writeText(tsv);
     showToast('Copied — paste directly into Excel');
   }catch(e){
-    // fallback for older browsers / permissions issues
     const textarea = document.createElement('textarea');
     textarea.value = tsv;
     document.body.appendChild(textarea);
@@ -661,11 +636,6 @@ document.getElementById('copyExcelBtn').addEventListener('click', async () => {
   }
 });
 
-function formatDateISO(dstr){
-  return dstr; // already YYYY-MM-DD, Excel reads this natively
-}
-
-// Download an actual .xlsx file
 document.getElementById('downloadExcelBtn').addEventListener('click', () => {
   const sorted = getSortedEntries();
   if(sorted.length === 0){
