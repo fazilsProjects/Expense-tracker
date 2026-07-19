@@ -104,6 +104,42 @@
   }
   .sync-status.connected { color: var(--success); }
 
+  .setup-help {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--border-color);
+  }
+  .setup-help summary {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--brand-primary);
+    cursor: pointer;
+    list-style: none;
+  }
+  .setup-help summary::-webkit-details-marker { display: none; }
+  .setup-help ol {
+    margin: 10px 0 0 18px;
+    padding: 0;
+  }
+  .setup-help li {
+    font-size: 12.5px;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+    line-height: 1.4;
+  }
+  .setup-help code {
+    background: var(--bg-main);
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 11.5px;
+  }
+  .setup-note {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 8px;
+    font-style: italic;
+  }
+
   .total-card {
     background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
     color: #ffffff;
@@ -329,29 +365,25 @@
   </header>
 
   <div class="sync-panel" id="syncPanel">
-    <!-- Template Onboarding Button -->
-    <div style="margin-bottom: 14px; text-align: center;">
-      <a href="https://docs.google.com/spreadsheets/d/1-hOysCedkL-wFykvOyJMQUVUUuyPRUce131bxWmFW_A/template/preview" 
-         target="_blank" 
-         style="display: block; background: #10b981; color: white; text-decoration: none; padding: 12px; border-radius: 12px; font-size: 14px; font-weight: 700; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.15); transition: background 0.2s;">
-         🟢 Step 1: Create Your Linked Google Sheet
-      </a>
-      <span style="display: inline-block; margin-top: 6px; font-size: 11px; color: var(--text-muted);">
-        Click above, click "Use Template", then inside your new sheet go to <b>Deploy &rarr; New Deployment &rarr; Web App (Anyone)</b>.
-      </span>
+    <div class="sync-row">
+      <input type="text" id="syncUrl" placeholder="Paste your Apps Script Web app URL here">
+      <button id="syncSaveBtn">Connect</button>
     </div>
+    <div class="sync-status" id="syncStatus">Not connected — entries save on this device only</div>
 
-    <div style="border-top: 1px dashed var(--border-color); margin: 12px 0; padding-top: 12px;">
-      <span style="display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px;">
-        Step 2: Connect via API Link
-      </span>
-      <div class="sync-row">
-        <input type="text" id="syncUrl" placeholder="Paste Cell A1 URL link here">
-        <button id="syncSaveBtn">Connect</button>
-      </div>
-      <div class="sync-status" id="syncStatus">Not connected — entries save on this device only</div>
-    </div>
+    <details class="setup-help">
+      <summary>New here? How to get this URL →</summary>
+      <ol>
+        <li>Open your Google Sheet, then go to <b>Extensions → Apps Script</b></li>
+        <li>Paste in the sync script (ask for it if you don't have it yet)</li>
+        <li>Click <b>Deploy → New deployment</b>, choose type <b>Web app</b></li>
+        <li>Set <b>Execute as: Me</b> and <b>Who has access: Anyone</b>, then Deploy</li>
+        <li>Copy the URL it gives you (ends in <code>/exec</code>) and paste it above</li>
+      </ol>
+      <div class="setup-note">Your Sheet also has an "Instructions" tab with these same steps.</div>
+    </details>
   </div>
+
 
   <div class="total-card">
     <div class="total-label">This Month</div>
